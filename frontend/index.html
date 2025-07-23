@@ -1,37 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Web Answer Bot</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web Answer Bot</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="container">
+    <h1>Web Answer Bot</h1>
     <h2>Ask a Question About a Website</h2>
-    <input type="text" id="url" placeholder="Enter website URL" style="width: 100%; padding: 10px;"><br><br>
-    <input type="text" id="question" placeholder="Enter your question" style="width: 100%; padding: 10px;"><br><br>
-    <button onclick="askQuestion()" style="padding: 10px 20px;">Ask</button>
-    <div id="output">Answer will appear here...</div>
 
-    <script>
-        async function askQuestion() {
-            const url = document.getElementById("url").value;
-            const question = document.getElementById("question").value;
-            document.getElementById("output").innerText = "Thinking...";
+    <input type="text" id="url" placeholder="Enter website URL" />
+    <textarea id="question" rows="3" placeholder="Type your question here..."></textarea>
+    
+    <button onclick="startVoice()">🎤 Voice Input</button>
+    <button onclick="askQuestion()">Ask</button>
 
-            const response = await fetch("https://webanswerbot.onrender.com/ask", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ url, question })
-            });
+    <div id="answer">Answer will appear here...</div>
+  </div>
 
-            const data = await response.json();
-            if (data.answer) {
-                document.getElementById("output").innerText = data.answer;
-            } else {
-                document.getElementById("output").innerText = data.error || "Something went wrong.";
-            }
+  <script>
+    async function askQuestion() {
+      const url = document.getElementById("url").value;
+      const question = document.getElementById("question").value;
+      document.getElementById("answer").innerText = "Thinking...";
+
+      try {
+        const response = await fetch("https://webanswerbot.onrender.com/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ url, question })
+        });
+
+        const data = await response.json();
+        if (data.answer) {
+          document.getElementById("answer").innerText = data.answer;
+        } else {
+          document.getElementById("answer").innerText = data.error || "Something went wrong.";
         }
-    </script>
+      } catch (error) {
+        document.getElementById("answer").innerText = "Failed to reach server.";
+      }
+    }
+
+    function startVoice() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.start();
+      recognition.onresult = (event) => {
+        const speech = event.results[0][0].transcript;
+        document.getElementById("question").value = speech;
+      };
+    }
+  </script>
 </body>
 </html>
