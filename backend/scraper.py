@@ -1,16 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 
-def scrape_website(url: str) -> str:
+def scrape_website(url):
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        }
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-
-        soup = BeautifulSoup(response.text, "html.parser")
-        text = soup.get_text(separator="\n")
-        return text[:6000]  # Limit to 6000 characters for LLM
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.content, "html.parser")
+        text = soup.get_text(separator=' ', strip=True)
+        return text[:3000]  # limit text to 3000 characters
     except Exception as e:
-        return f"Error scraping website: {e}"
+        return f"Error scraping website: {str(e)}"

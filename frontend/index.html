@@ -4,7 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Web Answer Bot</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #answer {
+      margin-top: 20px;
+      background: #eee;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -19,19 +44,30 @@
   </div>
 
   <script>
+    const backendUrl = "https://webanswerbot.onrender.com"; // Change if local
+
     const askQuestion = async () => {
       const url = document.getElementById("url").value;
       const question = document.getElementById("question").value;
       document.getElementById("answer").innerText = "Thinking...";
 
-      const res = await fetch("https://webanswerbot.onrender.com/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, question })
-      });
+      try {
+        const res = await fetch(`${backendUrl}/ask`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, question })
+        });
 
-      const data = await res.json();
-      document.getElementById("answer").innerText = data.answer;
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Server error");
+        }
+
+        const data = await res.json();
+        document.getElementById("answer").innerText = data.answer || "No answer returned.";
+      } catch (error) {
+        document.getElementById("answer").innerText = `❌ Error: ${error.message}`;
+      }
     };
 
     const startVoice = () => {

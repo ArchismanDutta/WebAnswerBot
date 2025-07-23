@@ -12,10 +12,11 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 app = FastAPI()
 
-# CORS settings for frontend
+# ✅ Allow frontend domain
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://web-answer-bot-ge24.vercel.app"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
