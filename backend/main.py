@@ -15,7 +15,7 @@ app = FastAPI()
 # CORS settings for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://web-answer-bot-ge24.vercel.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
