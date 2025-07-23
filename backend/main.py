@@ -4,30 +4,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 import requests
-from scraper import scrape_website
+from scraper import scrape_website  # Make sure this file exists
 
-# Load environment variables
 load_dotenv()
+
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-# Initialize FastAPI app
 app = FastAPI()
 
-# CORS setup to allow frontend access
+# ✅ Update with your actual frontend domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://web-answer-bot-ge24.vercel.app"],  # your frontend URL
+    allow_origins=["https://web-answer-bot-ge24.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Request body model
 class AskRequest(BaseModel):
     url: HttpUrl
     question: str
 
-# POST endpoint to handle user questions
 @app.post("/ask")
 async def ask_question(data: AskRequest):
     scraped_text = scrape_website(str(data.url))
@@ -54,13 +51,9 @@ Answer clearly and concisely.
         "messages": [{"role": "user", "content": prompt}],
     }
 
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers)
-
-    if response.status_code != 200:
-        return {"error": "Failed to get response from OpenRouter", "status_code": response.status_code, "details": response.text}
-
     try:
-        res_json = response.json()
-        return {"answer": res_json["choices"][0]["message"]["content"]}
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers)
+        data = response.json()
+        return {"answer": data["choices"][0]["message"]["content"]}
     except Exception as e:
-        return {"error": "Failed to parse OpenRouter response", "details": str(e)}
+        return {"error": "Failed to get answer", "details": str(e)}
