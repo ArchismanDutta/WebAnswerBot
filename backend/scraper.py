@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 def scrape_website(url):
     try:
         response = requests.get(url, timeout=10)
-        soup = BeautifulSoup(response.content, "html.parser")
-        text = soup.get_text(separator=' ', strip=True)
-        return text[:3000]  # limit text to 3000 characters
+        soup = BeautifulSoup(response.text, 'html.parser')
+        texts = soup.stripped_strings
+        return " ".join(list(texts)[:1000])  # Limit for performance
     except Exception as e:
-        return f"Error scraping website: {str(e)}"
+        return ""
