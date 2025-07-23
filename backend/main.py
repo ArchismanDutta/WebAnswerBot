@@ -1,62 +1,64 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 from pydantic import BaseModel, HttpUrl
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
-from openai import OpenAI
-from scraper import scrape_website
+import requests
+from scraper import scrape_website  # Make sure this file exists and works
 
+# Load environment variables
 load_dotenv()
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
-
+# FastAPI app
 app = FastAPI()
 
-# ✅ Allow your frontend domain hosted on Vercel
+# ✅ CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://web-answer-bot-ge24.vercel.app",  # ⬅️ change this to match your frontend URL
-        "http://localhost:3000"  # optional for local testing
-    ],
-    allow_credentials=True,
+    allow_origins=["https://web-answer-bot-ge24.vercel.app"],  # Your frontend URL
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class RequestData(BaseModel):
+# Request schema
+class AskRequest(BaseModel):
     url: HttpUrl
     question: str
 
+# Endpoint
 @app.post("/ask")
-async def ask_question(data: RequestData):
-    content = scrape_website(data.url)
+async def ask_question(data: AskRequest):
+    scraped_text = scrape_website(str(data.url))
 
-    if content.startswith("Error"):
-        raise HTTPException(status_code=400, detail=content)
+    if not scraped_text:
+        return {"error": "Failed to scrape content from the website."}
+
+    prompt = f"""
+You are an AI assistant. A user has visited this website and wants to know:
+
+Website Content:
+{scraped_text}
+
+User Question:
+{data.question}
+
+Answer clearly and concisely.
+    """
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": "moonshotai/kimi-k2:free",
+        "messages": [{"role": "user", "content": prompt}],
+    }
 
     try:
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that answers questions based on website content.",
-            },
-            {
-                "role": "user",
-                "content": f"Content from the website:\n{content}\n\nQuestion: {data.question}",
-            },
-        ]
-
-        response = client.chat.completions.create(
-            model="mistralai/mixtral-8x7b",
-            messages=messages,
-            temperature=0.5,
-        )
-
-        return {"answer": response.choices[0].message.content}
-
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers)
+        data = response.json()
+        return {"answer": data["choices"][0]["message"]["content"]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get response from OpenRouter: {str(e)}")
+        return {"error": "Failed to get response from OpenRouter", "details": str(e)}
